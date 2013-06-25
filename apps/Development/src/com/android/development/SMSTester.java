@@ -21,6 +21,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Telephony.Sms.Intents;
+import android.telephony.MSimSmsManager;
+import android.telephony.MSimTelephonyManager;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
@@ -30,6 +32,8 @@ import android.widget.TextView;
 
 import com.android.internal.util.HexDump;
 
+import static com.android.internal.telephony.MSimConstants.SUBSCRIPTION_KEY;
+
 public class SMSTester extends Activity {
 
     private final String MOCK_PDU =
@@ -37,6 +41,8 @@ public class SMSTester extends Activity {
 
     private EditText mSc;
     private EditText mSender;
+    private EditText mSubscription;
+    private LinearLayout mSubscriptionLayout;
     private EditText mMsg;
 
     @Override
@@ -46,7 +52,14 @@ public class SMSTester extends Activity {
 
         mSc = (EditText)findViewById(R.id.sms_tester_mock_sms_sc);
         mSender = (EditText)findViewById(R.id.sms_tester_mock_sms_sender);
+        mSubscription = (EditText)findViewById(R.id.sms_tester_mock_sms_subscription);
+        mSubscriptionLayout = (LinearLayout)findViewById(R.id.sms_tester_mock_sms_subscription_layout);
         mMsg = (EditText)findViewById(R.id.sms_tester_mock_sms_msg);
+
+        if (MSimTelephonyManager.getDefault().isMultiSimEnabled()) {
+            mSubscription.setText(String.valueOf(MSimSmsManager.getDefault().getPreferredSmsSubscription()));
+            mSubscriptionLayout.setVisibility(View.VISIBLE);
+        }
 
         Button btnMockSms = (Button)findViewById(R.id.sms_tester_mock_sms_send_msg);
         btnMockSms.setOnClickListener(new View.OnClickListener() {
@@ -54,6 +67,12 @@ public class SMSTester extends Activity {
             public void onClick(View v) {
                 String sc = mSc.getText().toString();
                 String sender = mSender.getText().toString();
+                int subscription;
+                try {
+                    subscription = Integer.parseInt(mSubscription.getText().toString());
+                } catch (NumberFormatException nfe) {
+                    subscription = -1;
+                }
                 String msg = mMsg.getText().toString();
 
                 Intent in = new Intent(Intents.MOCK_SMS_RECEIVED_ACTION);
@@ -66,7 +85,10 @@ public class SMSTester extends Activity {
                 if (!TextUtils.isEmpty(msg)) {
                     in.putExtra("msg", msg);
                 }
-                sendBroadcast(in);
+                if (subscription >= 0) {
+                    in.putExtra(SUBSCRIPTION_KEY, subscription);
+                }
+                sendOrderedBroadcast(in, null);
             }
         });
         Button btnMockSmsPdu = (Button)findViewById(R.id.sms_tester_mock_sms_send_pdu);
@@ -75,9 +97,18 @@ public class SMSTester extends Activity {
             public void onClick(View v) {
                 byte[][] pdus = new byte[1][];
                 pdus[0] = HexDump.hexStringToByteArray(MOCK_PDU);
+                int subscription;
+                try {
+                    subscription = Integer.parseInt(mSubscription.getText().toString());
+                } catch (NumberFormatException nfe) {
+                    subscription = -1;
+                }
                 Intent in = new Intent(Intents.MOCK_SMS_RECEIVED_ACTION);
                 in.putExtra("pdus", pdus);
-                sendBroadcast(in);
+                if (subscription >= 0) {
+                    in.putExtra(SUBSCRIPTION_KEY, subscription);
+                }
+                sendOrderedBroadcast(in, null);
             }
         });
     }

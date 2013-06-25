@@ -229,6 +229,7 @@
     <string name="sms_mock_title">Mock SMS</string>
     <string name="sms_smsc_address_title">SMSC Address:</string>
     <string name="sms_sender_address_title">Sender Address:</string>
+    <string name="sms_subscription_title">Subscription:</string>
     <string name="sms_message_title">Message:</string>
     <string name="sms_send_msg">Send Mock SMS Message</string>
     <string name="sms_send_pdu">Send Mock SMS PDU</string>
